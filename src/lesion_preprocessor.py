@@ -90,7 +90,7 @@ def get_data(file_path, melanoma_class, benign_class):
     inp_reshape = tf.reshape(interim_inputs, (-1, 3, 32 ,32))
     final_inputs = np.asarray(tf.transpose(inp_reshape, perm=[0,2,3,1]), dtype= np.float32)
 
-    #shuffle:
+    #shuffle: is it necessary? alternatives? 
     tf.random.shuffle(final_inputs)
     tf.random.shuffle(final_labels)
 
@@ -101,12 +101,30 @@ def get_data(file_path, melanoma_class, benign_class):
     
     return train_inputs, test_inputs, train_labels, test_labels
 
-get_data("data/data_ham10000/HAM10000_images", 1, 2)
+
+
+# get_data("data/data_ham10000/HAM10000_images", 1, 2)
     
 
 
 
 
+
+
+
+
+# image visualization: 
+# visualize images:
+# n_samples = 5
+# fig, m_axs = plt.subplots(7, n_samples, figsize = (4*n_samples, 3*7))
+# for n_axs, (type_name, type_rows) in zip(m_axs, 
+#                                         df.sort_values(['cell_type']).groupby('cell_type')):
+#     n_axs[0].set_title(type_name)
+#     for c_ax, (_, c_row) in zip(n_axs, type_rows.sample(n_samples, random_state=2018).iterrows()):
+#         c_ax.imshow(c_row['image'])
+#         c_ax.axis('off')
+# save and display sample image: 
+# fig.savefig('category_samples.png', dpi=300)
 
 
 

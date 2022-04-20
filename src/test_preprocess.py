@@ -38,7 +38,6 @@ lesion_type_dict = {
 
 base_skin_dir = "data/data_ham10000/HAM10000_images"
 
-# Merge images from both folders into one dictionary
 imageid_path_dict = {os.path.splitext(os.path.basename(x))[0]: x
                     for x in glob.glob(os.path.join(base_skin_dir, '', '*.jpg'))}
 
