@@ -30,16 +30,24 @@ def skin_tone_preprocessor(file_path):
     #rename columns for clarity
     df = df.rename(columns={df.columns[0]: "image_id"})
     df = df.rename(columns={df.columns[1]: "image_path"})
-    df["image"] = df['image_path'].map(lambda x: np.asarray(Image.open(x).resize((32, 32))))
+    df["image"] = df['image_path'].map(lambda x: np.asarray(Image.open(x).resize((100, 75))))
+
+    #visualize sample skintone image
+    # test_image = df["image"][40]
+    # test_image = tf.convert_to_tensor(test_image)
+    # # convert tensor to PIL image:
+    # pil_img = tf.keras.preprocessing.image.array_to_img(test_image)
+    # pil_img.show()
 
     imgs = df["image"]
     inputs = np.array(imgs)/(255.0) # normalization
 
     interim_inputs = [j for i, j in enumerate(inputs)]
-    inp_reshape = tf.reshape(interim_inputs, (-1, 3, 32 ,32))
+    inp_reshape = tf.reshape(interim_inputs, (-1, 3, 100 ,75))
 
     final_inputs = np.asarray(tf.transpose(inp_reshape, perm=[0,2,3,1]), dtype= np.float32)
     
+
     return final_inputs
 
 

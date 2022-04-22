@@ -69,9 +69,10 @@ def get_data(file_path, melanoma_class, benign_class):
     df['cell_type_idx'] = pd.Categorical(df['cell_type']).codes
 
     #Resizing Images:
-    df['image'] = df['path'].map(lambda x: np.asarray(Image.open(x).resize((32, 32))))
+    df['image'] = df['path'].map(lambda x: np.asarray(Image.open(x).resize((100, 75))))
 
     ###################################################################################
+
 
     inputs = df["image"]
     inputs = np.array(inputs)/(255.0) # normalization
@@ -87,7 +88,7 @@ def get_data(file_path, melanoma_class, benign_class):
     final_labels = tf.one_hot(new_labels, depth = 2)
 
     # #reshaping per described by assignment doc walkthrough
-    inp_reshape = tf.reshape(interim_inputs, (-1, 3, 32 ,32))
+    inp_reshape = tf.reshape(interim_inputs, (-1, 3, 100, 75))
     final_inputs = np.asarray(tf.transpose(inp_reshape, perm=[0,2,3,1]), dtype= np.float32)
 
     #shuffle: is it necessary? alternatives? 
@@ -100,17 +101,6 @@ def get_data(file_path, melanoma_class, benign_class):
     test_labels = final_labels[1001:]
     
     return train_inputs, test_inputs, train_labels, test_labels
-
-
-
-# get_data("data/data_ham10000/HAM10000_images", 1, 2)
-    
-
-
-
-
-
-
 
 
 # image visualization: 

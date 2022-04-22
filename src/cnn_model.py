@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from matplotlib import pyplot as plt
 from lesion_preprocessor import get_data
-from architectures_models.convolution import conv2d
+from convolution import conv2d
 
 import os
 import tensorflow as tf
