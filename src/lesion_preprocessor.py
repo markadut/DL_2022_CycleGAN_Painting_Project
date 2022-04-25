@@ -1,3 +1,6 @@
+from configparser import Interpolation
+from tkinter import X
+from turtle import xcor
 from typing import final
 # from cv2 import dft
 import matplotlib.pyplot as plt
@@ -15,30 +18,13 @@ from sklearn.model_selection import train_test_split
 from keras.utils.np_utils import to_categorical # used for converting labels to one-hot-encoding
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.layers.experimental.preprocessing import RandomFlip, RandomRotation
+import cv2
+from tensorflow.keras.preprocessing.image import smart_resize
 
-def get_data(file_path, melanoma_class, benign_class):
-    """
-	Given a file path and two target classes, returns an array of 
-	normalized inputs (images) and an array of labels. 
-	You will want to first extract only the data that matches the 
-	corresponding classes we want (there are 10 classes and we only want 2).
-	You should make sure to normalize all inputs and also turn the labels
-	into one hot vectors using tf.one_hot().
-	Note that because you are using tf.one_hot() for your labels, your
-	labels will be a Tensor, while your inputs will be a NumPy array. This 
-	is fine because TensorFlow works with NumPy arrays.
-	:param file_path: file path for inputs and labels, something 
-	like 'CIFAR_data_compressed/train'
-	:param melanoma_class:  an integer (0-9) representing the first target
-	class in the CIFAR10 dataset, for a cat, this would be a 3
-	:param melanoma_class:  an integer (0-9) representing the second target
-	class in the CIFAR10 dataset, for a dog, this would be a 5
-	:return: normalized NumPy array of inputs and tensor of labels, where 
-	inputs are of type np.float32 and has size (num_inputs, width, height, num_channels) and labels 
-	has size (num_examples, num_classes)
-	""" 
+def get_data(file_path, melanoma_class):
+ 
 
-    ########### PREPARE DATASET TO HAVE IMAGE PATHS, IMAGE RGB VALUES (np.array) ##########
+   ########### PREPARE DATASET TO HAVE IMAGE PATHS, IMAGE RGB VALUES (np.array) ##########
 
     df = pd.read_csv("data/data_ham10000/HAM10000_metadata.csv")
     # print(df.head(10))
@@ -69,52 +55,129 @@ def get_data(file_path, melanoma_class, benign_class):
     df['cell_type_idx'] = pd.Categorical(df['cell_type']).codes
 
     #Resizing Images:
-    df['image'] = df['path'].map(lambda x: np.asarray(Image.open(x).resize((100, 75))))
+    df['image'] = df['path'].map(lambda x: np.asarray(Image.open(x).resize((256,256))))
 
     ###################################################################################
 
-
     inputs = df["image"]
-    inputs = np.array(inputs)/(255.0) # normalization
-    labels = df["cell_type_idx"].to_list()
+    inputs = inputs/(255.0) # normalization
+    labels = df["cell_type"].to_list()
 
-    interim_inputs = [j for i, j in enumerate(inputs) if (labels[i] == melanoma_class or labels[i]==benign_class)]
-    interim_labels = [j for i, j in enumerate(labels) if (labels[i] == melanoma_class or labels[i]==benign_class)]
+    interim_inputs = [j for i, j in enumerate(inputs) if (labels[i] == melanoma_class)]
+
+    inp_reshape = tf.reshape(interim_inputs, (-1, 256, 256, 3))
+    final_inputs = np.asarray(inp_reshape, dtype= np.float32)
+
+    melanoma_images = []
+    for tensor in final_inputs:
+        melanoma_images.append(tensor)
+
+    melanoma_tensor_converted = tf.convert_to_tensor(melanoma_images)
+    melanoma_dataset = tf.data.Dataset.from_tensor_slices(melanoma_tensor_converted)
+
+    ds_size = tf.data.experimental.cardinality(melanoma_dataset)
+    train_split=0.8
+    test_split=0.2
+    shuffle_size=1113
+
+    Shuffle=True
+    if Shuffle:
+    # Specify seed to always have the same split distribution between runs
+        ds = melanoma_dataset.shuffle(shuffle_size, seed=12)
+
+    train_size = int(np.ceil(train_split * int(ds_size)))
+    test_size = int(np.ceil(test_split * int(ds_size)))
+
+    train_ds = ds.take(train_size)    
+    test_ds = ds.take(test_size)
+
+    return train_ds, test_ds
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# def get_data(file_path, melanoma_class, benign_class):
+ 
+
+#    ########### PREPARE DATASET TO HAVE IMAGE PATHS, IMAGE RGB VALUES (np.array) ##########
+
+#     df = pd.read_csv("data/data_ham10000/HAM10000_metadata.csv")
+#     # print(df.head(10))
+
+#     #handling missing data: 
+#     df.isnull().sum()
+#     df['age'].fillna(int(df['age'].mean()),inplace=True)
+
+#     #lesion types dict to map 
+#     lesion_type_dict = {
+#         'nv': 'Melanocytic nevi',
+#         'mel': 'Melanoma',
+#         'bkl': 'Benign keratosis-like lesions ',
+#         'bcc': 'Basal cell carcinoma',
+#         'akiec': 'Actinic keratoses',
+#         'vasc': 'Vascular lesions',
+#         'df': 'Dermatofibroma'
+#     }
+
+#     base_skin_dir = file_path
+
+#     # Merge images from both folders into one dictionary
+#     imageid_path_dict = {os.path.splitext(os.path.basename(x))[0]: x
+#                         for x in glob.glob(os.path.join(base_skin_dir, '', '*.jpg'))}
+
+#     df['path'] = df['image_id'].map(imageid_path_dict.get)
+#     df['cell_type'] = df['dx'].map(lesion_type_dict.get) 
+#     df['cell_type_idx'] = pd.Categorical(df['cell_type']).codes
+
+#     #Resizing Images:
+#     df['image'] = df['path'].map(lambda x: np.asarray(Image.open(x).resize((32,32))))
+
+#     ###################################################################################
+
+#     inputs = df["image"]
+#     inputs = inputs/(255.0) # normalization
+#     labels = df["cell_type_idx"].to_list()
+
+#     interim_inputs = [j for i, j in enumerate(inputs) if (labels[i] == melanoma_class or labels[i]==benign_class)]
+#     interim_labels = [j for i, j in enumerate(labels) if (labels[i] == melanoma_class or labels[i]==benign_class)]
+
+#     #binarizing labels
+#     new_labels = [0 if (i == melanoma_class) else 1 for i in interim_labels]
     
-    #binarizing labels
-    new_labels = [0 if (i == melanoma_class) else 1 for i in interim_labels]
+#     #one-hot encoding the final labels 
+#     final_labels = tf.one_hot(new_labels, depth = 2)
+
+#     inp_reshape = tf.reshape(interim_inputs, (-1, 32, 32, 3))
+#     final_inputs = np.asarray(inp_reshape, dtype= np.float32)
+
+#     #shuffle: is it necessary? alternatives? 
+#     tf.random.shuffle(final_inputs)
+#     tf.random.shuffle(final_labels)
+
+#     train_inputs = final_inputs[:1000]
+#     test_inputs = final_inputs[1001:]
+#     train_labels = final_labels[:1000]
+#     test_labels = final_labels[1001:]
     
-    #one-hot encoding the final labels 
-    final_labels = tf.one_hot(new_labels, depth = 2)
+#     return train_inputs, test_inputs, train_labels, test_labels
 
-    # #reshaping per described by assignment doc walkthrough
-    inp_reshape = tf.reshape(interim_inputs, (-1, 3, 100, 75))
-    final_inputs = np.asarray(tf.transpose(inp_reshape, perm=[0,2,3,1]), dtype= np.float32)
-
-    #shuffle: is it necessary? alternatives? 
-    tf.random.shuffle(final_inputs)
-    tf.random.shuffle(final_labels)
-
-    train_inputs = final_inputs[:1000]
-    test_inputs = final_inputs[1001:]
-    train_labels = final_labels[:1000]
-    test_labels = final_labels[1001:]
-    
-    return train_inputs, test_inputs, train_labels, test_labels
+# # get_data("data/data_ham10000/HAM10000_images", 1, 2)
+ 
 
 
-# image visualization: 
-# visualize images:
-# n_samples = 5
-# fig, m_axs = plt.subplots(7, n_samples, figsize = (4*n_samples, 3*7))
-# for n_axs, (type_name, type_rows) in zip(m_axs, 
-#                                         df.sort_values(['cell_type']).groupby('cell_type')):
-#     n_axs[0].set_title(type_name)
-#     for c_ax, (_, c_row) in zip(n_axs, type_rows.sample(n_samples, random_state=2018).iterrows()):
-#         c_ax.imshow(c_row['image'])
-#         c_ax.axis('off')
-# save and display sample image: 
-# fig.savefig('category_samples.png', dpi=300)
 
 
 

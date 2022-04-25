@@ -1,4 +1,5 @@
 #Importing required libraries
+from asyncio.base_tasks import _task_print_stack
 from typing import final
 from cv2 import dft
 import matplotlib.pyplot as plt
@@ -17,7 +18,8 @@ from keras.utils.np_utils import to_categorical # used for converting labels to 
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.layers.experimental.preprocessing import RandomFlip, RandomRotation
 from tensorflow.keras.preprocessing.image import array_to_img
-
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from cnn_model import train
 
 def skin_tone_preprocessor(file_path):
 
@@ -30,25 +32,53 @@ def skin_tone_preprocessor(file_path):
     #rename columns for clarity
     df = df.rename(columns={df.columns[0]: "image_id"})
     df = df.rename(columns={df.columns[1]: "image_path"})
-    df["image"] = df['image_path'].map(lambda x: np.asarray(Image.open(x).resize((100, 75))))
-
-    #visualize sample skintone image
-    # test_image = df["image"][40]
-    # test_image = tf.convert_to_tensor(test_image)
-    # # convert tensor to PIL image:
-    # pil_img = tf.keras.preprocessing.image.array_to_img(test_image)
-    # pil_img.show()
+    df["image"] = df['image_path'].map(lambda x: np.asarray(Image.open(x).resize((256, 256))))
 
     imgs = df["image"]
     inputs = np.array(imgs)/(255.0) # normalization
 
     interim_inputs = [j for i, j in enumerate(inputs)]
-    inp_reshape = tf.reshape(interim_inputs, (-1, 3, 100 ,75))
-
-    final_inputs = np.asarray(tf.transpose(inp_reshape, perm=[0,2,3,1]), dtype= np.float32)
+    inp_reshape = tf.reshape(interim_inputs, (-1, 256, 256, 3))
+    final_inputs = np.asarray(inp_reshape, dtype= np.float32)
     
+    train_imgs = tf.random.shuffle(final_inputs)
+    
+    og_images = []
+    for tensor in train_imgs:
+        og_images.append(tensor)
 
-    return final_inputs
+    # Apply data augmentation to populate some data 
+    # With data augmentation to prevent overfitting 
+    lst_saturated = []
+    for i in range(len(train_imgs)):
+        saturation_played_1_3 = tf.image.adjust_saturation(train_imgs[i], 1.3)
+        saturation_played_1_6 = tf.image.adjust_saturation(train_imgs[i], 1.6)
+        saturation_played_1_9 = tf.image.adjust_saturation(train_imgs[i], 1.9)
+        lst_saturated.append(saturation_played_1_3)
+        lst_saturated.append(saturation_played_1_6)
+        lst_saturated.append(saturation_played_1_9)
+
+    res_list = [y for x in [og_images, lst_saturated] for y in x]
+    tensor_converted_saturation = tf.convert_to_tensor(res_list)
+    saturation_skinTone_dataset = tf.data.Dataset.from_tensor_slices(tensor_converted_saturation)
+
+    ds_size = tf.data.experimental.cardinality(saturation_skinTone_dataset)
+    train_split=0.8
+    test_split=0.2
+    shuffle_size=296
+
+    Shuffle=True
+    if Shuffle:
+    # Specify seed to always have the same split distribution between runs
+        ds = saturation_skinTone_dataset.shuffle(shuffle_size, seed=12)
+
+    train_size = int(np.ceil(train_split * int(ds_size)))
+    test_size = int(np.ceil(test_split * int(ds_size)))
+
+    train_ds = ds.take(train_size)    
+    test_ds = ds.take(test_size)
+
+    return train_ds, test_ds
 
 
-skin_tone_preprocessor("data/SkinTone_Dataset")
+# skin_tone_preprocessor("data/SkinTone_Dataset")
