@@ -78,7 +78,50 @@ def skin_tone_preprocessor(file_path):
     train_ds = ds.take(train_size)    
     test_ds = ds.take(test_size)
 
-    return train_ds, test_ds
+    # return train_ds, test_ds
+    train_size_lst = []
+    for img in train_ds:
+        train_size_lst.append(img)
+
+    train_imgs_arrays = []
+    for tensor_images in train_size_lst:
+        array_img = np.asarray(tensor_images)
+        train_imgs_arrays.append(array_img)
+    
+    #uncomment for visualization purposes
+    # for i in range(len(train_imgs_arrays)):
+    #     test_input_i = train_imgs_arrays[i]
+    #     plt.figure(figsize=(12, 12))
+    #     display_list = [test_input_i]
+    #     title = ['Input Image']
+    #     for j in range(1):
+    #         plt.subplot(1, 2, j+1)
+    #         plt.title(title[j])
+    #         plt.imshow(display_list[j])
+    #         plt.axis('off')
+    #     plt.savefig(f"training_skin_tone_image_{i}")
+
+    test_size_lst = []
+    for img in test_ds:
+        test_size_lst.append(img)
+
+    test_imgs_arrays = []
+    for tensor_images in test_size_lst:
+        array_img = np.asarray(tensor_images)
+        test_imgs_arrays.append(array_img)
+    
+    #uncomment for visualization purposes
+    for i in range(len(test_imgs_arrays)):
+        test_input_i = test_imgs_arrays[i]
+        plt.figure(figsize=(12, 12))
+        display_list = [test_input_i]
+        title = ['Test Input Image']
+        for j in range(1):
+            plt.title(title[j])
+            plt.imshow(display_list[j])
+            plt.axis('off')
+        plt.savefig(f"testing_skin_tone_image_{i}")
 
 
-# skin_tone_preprocessor("data/SkinTone_Dataset")
+skin_tone_preprocessor("data/SkinTone_Dataset") 
+
