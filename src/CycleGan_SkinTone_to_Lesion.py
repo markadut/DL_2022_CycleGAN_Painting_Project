@@ -9,10 +9,9 @@ import os
 import time
 import matplotlib.pyplot as plt
 from IPython.display import clear_output
+import numpy as np
 
 ############################ CYCLEGAN #################################
-
-
 ############################ INPUT PIPELINE ############################
 AUTOTUNE = tf.data.AUTOTUNE
 BUFFER_SIZE = 1000
@@ -60,6 +59,7 @@ title = ['Skin Tone', 'To Melanoma', 'Melanoma', 'To Skin Tone']
 #     plt.imshow(imgs[i][0] * 0.5 + 0.5)
 #   else:
 #     plt.imshow(imgs[i][0] * 0.5 * contrast + 0.5)
+# plt.savefig(f"U_net_generated_image{i}")
 # plt.show()
 
 # # Visualize pixel mapping
@@ -71,11 +71,11 @@ title = ['Skin Tone', 'To Melanoma', 'Melanoma', 'To Skin Tone']
 # plt.title('Is a real skin tone sample?')
 # plt.imshow(discriminator_x(sample_skin_patch)[0, ..., -1], cmap='RdBu_r')
 # plt.show()
-# #####################################################################
+#####################################################################
 
 
 # ########################### DEFINE LOSS FUNCTIONS ###################
-LAMBDA = 5
+LAMBDA = 10
 loss_obj = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 def discriminator_loss(real, generated):
@@ -146,10 +146,17 @@ def generate_images(model, test_input):
 # * Calculate the gradients using backpropagation.
 # * Apply the gradients to the optimizer.
 
-@tf.function
+# @tf.function
 def train_step(real_x, real_y):
   # persistent is set to True because the tape is used more than
   # once to calculate the gradients.
+
+  # total_cycle_consistency_loss = []
+  # total_generator_g_loss = []
+  # total_generator_f_loss = [] 
+  # total_discriminator_x_loss = []
+  # total_discriminator_y_loss = []
+
   with tf.GradientTape(persistent=True) as tape:
     # Generator G translates X -> Y
     # Generator F translates Y -> X.
@@ -175,16 +182,23 @@ def train_step(real_x, real_y):
     gen_f_loss = generator_loss(disc_fake_x)
     
     total_cycle_loss = calc_cycle_loss(real_x, cycled_x) + calc_cycle_loss(real_y, cycled_y)
-    # print("total cycle loss: ", total_cycle_loss)
-    
+    # print("Total Cycle Loss:", total_cycle_loss.numpy())
+    # total_cycle_consistency_loss.append(total_cycle_loss.numpy())
+
     # Total generator loss = adversarial loss + cycle loss
     total_gen_g_loss = gen_g_loss + total_cycle_loss + identity_loss(real_y, same_y)
     total_gen_f_loss = gen_f_loss + total_cycle_loss + identity_loss(real_x, same_x)
-    # print("total generator loss (adversarial + cycle): ", total_gen_g_loss)
+    # print("Total generator G Loss:", total_gen_g_loss.numpy())
+    # print("Total generator F Loss:", total_gen_f_loss.numpy())
+    # total_generator_g_loss.append(total_gen_g_loss.numpy())
+    # total_generator_g_loss.append(total_gen_f_loss)
 
     disc_x_loss = discriminator_loss(disc_real_x, disc_fake_x)
     disc_y_loss = discriminator_loss(disc_real_y, disc_fake_y)
-    # print("discriminator loss: ", disc_x_loss)
+    # print("Total Discriminator-x Loss:", disc_x_loss.numpy())
+    # print("Total Discriminator-y Loss:", disc_y_loss.numpy())
+    # total_discriminator_x_loss.append(disc_x_loss.numpy())
+    # total_discriminator_y_loss.append(disc_y_loss)
 
   
   # Calculate the gradients for generator and discriminator
@@ -210,6 +224,12 @@ def train_step(real_x, real_y):
   
   discriminator_y_optimizer.apply_gradients(zip(discriminator_y_gradients,
                                                 discriminator_y.trainable_variables))
+                                        
+  # print("Total Cycle Consistency Loss:", total_cycle_consistency_loss)
+  # print("Total Generator G Loss:", total_generator_g_loss)
+  # # print(total_generator_f_loss)
+  # print("Total Discriminator X Loss:", total_discriminator_x_loss)
+  # # print(total_discriminator_y_loss)
 
 
 for epoch in range(EPOCHS):
@@ -223,10 +243,11 @@ for epoch in range(EPOCHS):
     n += 1
 
   clear_output(wait=True)
-  # Using a consistent image (sample_horse) so that the progress of the model
+  # Using a consistent image (skin tone) so that the progress of the model
   # is clearly visible.
   generate_images(generator_g, sample_skin_patch)
 
+  # Run the trained model on the test dataset
   if (epoch + 1) % 5 == 0:
     ckpt_save_path = ckpt_manager.save()
     print ('Saving checkpoint for epoch {} at {}'.format(epoch+1,
@@ -234,4 +255,9 @@ for epoch in range(EPOCHS):
 
   print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
                                                       time.time()-start))
+
+  
+
+
+                                                  
 

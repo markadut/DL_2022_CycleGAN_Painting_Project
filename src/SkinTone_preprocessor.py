@@ -111,17 +111,16 @@ def skin_tone_preprocessor(file_path):
         test_imgs_arrays.append(array_img)
     
     #uncomment for visualization purposes
-    for i in range(len(test_imgs_arrays)):
-        test_input_i = test_imgs_arrays[i]
-        plt.figure(figsize=(12, 12))
-        display_list = [test_input_i]
-        title = ['Test Input Image']
-        for j in range(1):
-            plt.title(title[j])
-            plt.imshow(display_list[j])
-            plt.axis('off')
-        plt.savefig(f"testing_skin_tone_image_{i}")
+    # for i in range(len(test_imgs_arrays)):
+    #     test_input_i = test_imgs_arrays[i]
+    #     plt.figure(figsize=(12, 12))
+    #     display_list = [test_input_i]
+    #     title = ['Test Input Image']
+    #     for j in range(1):
+    #         plt.title(title[j])
+    #         plt.imshow(display_list[j])
+    #         plt.axis('off')
+    #     plt.savefig(f"testing_skin_tone_image_{i}")
 
-
-skin_tone_preprocessor("data/SkinTone_Dataset") 
+    return train_ds, test_ds
 
