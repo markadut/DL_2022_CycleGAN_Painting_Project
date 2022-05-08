@@ -15,12 +15,14 @@ import numpy as np
 ############################ INPUT PIPELINE ############################
 AUTOTUNE = tf.data.AUTOTUNE
 BUFFER_SIZE = 1000
-BATCH_SIZE = 10
+BATCH_SIZE = 1
 IMG_WIDTH = 256
 IMG_HEIGHT = 256
 
-train_skin_tone, test_skin_tone = skin_tone_preprocessor("data/SkinTone_Dataset") 
+train_skin_tone, test_skin_tone, dark_skin_sample = skin_tone_preprocessor("data/SkinTone_Dataset") 
 train_melanoma, test_melanoma = get_data("data/data_ham10000/HAM10000_images", "Melanoma")
+
+dark_skin_sample = tf.expand_dims(dark_skin_sample, axis=0)
 
 train_skin_tone = train_skin_tone.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 train_melanoma = train_melanoma.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
@@ -29,7 +31,6 @@ test_melanoma = test_melanoma.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 
 
 # #####################################################################
-
 # ########################### APPLY TF PIX2PIX ########################
 OUTPUT_CHANNELS = 3
 
@@ -45,7 +46,7 @@ sample_melanoma = next(iter(train_melanoma))
 to_melanoma = generator_g(sample_skin_patch)
 to_skin_tone = generator_f(sample_melanoma)
 
-plt.figure(figsize=(8, 8))
+# plt.figure(figsize=(8, 8))
 contrast = 8
 
 imgs = [sample_skin_patch, to_melanoma, sample_melanoma, to_skin_tone]
@@ -75,7 +76,7 @@ title = ['Skin Tone', 'To Melanoma', 'Melanoma', 'To Skin Tone']
 
 
 # ########################### DEFINE LOSS FUNCTIONS ###################
-LAMBDA = 10
+LAMBDA = 1
 loss_obj = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 def discriminator_loss(real, generated):
@@ -120,7 +121,7 @@ if ckpt_manager.latest_checkpoint:
   print ('Latest checkpoint restored!!')
 
 ########################### TRAINING THE CYCLEGAN ###################
-EPOCHS = 10
+EPOCHS = 30
 
 def generate_images(model, test_input):
   # print("prediction", prediction.shape)
@@ -146,16 +147,16 @@ def generate_images(model, test_input):
 # * Calculate the gradients using backpropagation.
 # * Apply the gradients to the optimizer.
 
-# @tf.function
+# total_cycle_consistency_loss = []
+# total_generator_g_loss = []
+# total_generator_f_loss = [] 
+# total_discriminator_x_loss = []
+# total_discriminator_y_loss = []
+
+@tf.function
 def train_step(real_x, real_y):
   # persistent is set to True because the tape is used more than
   # once to calculate the gradients.
-
-  # total_cycle_consistency_loss = []
-  # total_generator_g_loss = []
-  # total_generator_f_loss = [] 
-  # total_discriminator_x_loss = []
-  # total_discriminator_y_loss = []
 
   with tf.GradientTape(persistent=True) as tape:
     # Generator G translates X -> Y
@@ -242,10 +243,12 @@ for epoch in range(EPOCHS):
       print ('.', end='')
     n += 1
 
-  clear_output(wait=True)
+  clear_output(wait=False)
   # Using a consistent image (skin tone) so that the progress of the model
   # is clearly visible.
-  generate_images(generator_g, sample_skin_patch)
+
+  if ((epoch + 1) % 3 == 0) or (epoch == 10):
+    generate_images(generator_g, dark_skin_sample)
 
   # Run the trained model on the test dataset
   if (epoch + 1) % 5 == 0:
@@ -257,7 +260,6 @@ for epoch in range(EPOCHS):
                                                       time.time()-start))
 
   
-
 
                                                   
 
