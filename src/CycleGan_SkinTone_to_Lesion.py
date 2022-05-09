@@ -76,7 +76,7 @@ title = ['Skin Tone', 'To Melanoma', 'Melanoma', 'To Skin Tone']
 
 
 # ########################### DEFINE LOSS FUNCTIONS ###################
-LAMBDA = 1
+LAMBDA = 0.5
 loss_obj = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 def discriminator_loss(real, generated):
@@ -138,7 +138,7 @@ def generate_images(model, test_input):
       # getting the pixel values between [0, 1] to plot it.
       plt.imshow(display_list[j] * 0.5 + 0.5)
       plt.axis('off')
-    plt.savefig(f"epoch_{epoch}_lambda_{LAMBDA}_prediction_{i}")
+    plt.savefig(f"epoch_{epoch}__prediction_{i}")
   plt.show()
 
 #Training Steps: 
